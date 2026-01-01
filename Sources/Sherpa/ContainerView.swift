@@ -221,31 +221,36 @@ private struct ActiveSherpaOverlay: View {
             let proxySize = proxy.size
             let safeArea = proxy.safeAreaInsets
             
-            // Use actual screen bounds for clamping (more reliable than proxy.size)
+            // Use screen bounds for constraining the highlight ring
             let screenBounds = UIScreen.main.bounds.size
             
-            // Clamp the frame to screen bounds to prevent edge clipping
-            // Add small inset to ensure highlight border is fully visible
-            let clampedFrame = clampToScreen(frame: expandedFrame, screenSize: screenBounds, borderWidth: config.highlightWidth)
+            // Constrain highlight ring to stay within visible screen bounds
+            // so the border stroke is always visible (not clipped off-screen)
+            let constrainedHighlightFrame = constrainToScreen(frame: expandedFrame, screenSize: screenBounds)
             
-            spotlightOverlay(expandedFrame: clampedFrame)
-            highlightRing(expandedFrame: clampedFrame)
-            touchHandler(expandedFrame: clampedFrame)
-            calloutView(cutoutFrame: clampedFrame, screenSize: proxySize, safeArea: safeArea)
+            // Spotlight cutout uses full frame to properly cut out the entire view
+            spotlightOverlay(expandedFrame: expandedFrame)
+            // Highlight ring uses constrained frame so border is always visible
+            highlightRing(expandedFrame: constrainedHighlightFrame)
+            // Touch handler uses full frame for proper interaction
+            touchHandler(expandedFrame: expandedFrame)
+            // Callout uses constrained frame for positioning
+            calloutView(cutoutFrame: constrainedHighlightFrame, screenSize: proxySize, safeArea: safeArea)
         }
         .ignoresSafeArea()
         .animation(.easeInOut(duration: config.transitionDuration), value: sherpa.current)
     }
     
-    /// Clamps a frame to fit within screen bounds, accounting for border width
-    private func clampToScreen(frame: CGRect, screenSize: CGSize, borderWidth: CGFloat) -> CGRect {
-        // Add half the border width as inset so the stroke is fully visible
-        let inset = borderWidth / 2
+    /// Constrains a frame to stay within visible screen bounds with a small inset
+    /// so highlight ring borders are always visible
+    private func constrainToScreen(frame: CGRect, screenSize: CGSize) -> CGRect {
+        // Minimum inset from screen edges to ensure highlight stroke is visible
+        let edgeInset: CGFloat = config.highlightWidth + 2
         
-        let minX = max(inset, frame.minX)
-        let minY = max(inset, frame.minY)
-        let maxX = min(screenSize.width - inset, frame.maxX)
-        let maxY = min(screenSize.height - inset, frame.maxY)
+        let minX = max(edgeInset, frame.minX)
+        let minY = max(edgeInset, frame.minY)
+        let maxX = min(screenSize.width - edgeInset, frame.maxX)
+        let maxY = min(screenSize.height - edgeInset, frame.maxY)
         
         return CGRect(
             x: minX,
@@ -315,9 +320,14 @@ private struct ActiveSherpaOverlay: View {
     
     @ViewBuilder
     private func calloutView(cutoutFrame: CGRect, screenSize: CGSize, safeArea: EdgeInsets) -> some View {
-        // Calculate maximum available width accounting for safe areas and padding
-        let horizontalPadding = Design.Spacing.small * 2
-        let maxCalloutWidth = screenSize.width - safeArea.leading - safeArea.trailing - horizontalPadding
+        // Calculate the safe content area - the region where callouts can be displayed
+        let edgePadding = Design.Spacing.large  // 16pt minimum from each edge
+        let safeMinX = safeArea.leading + edgePadding
+        let safeMaxX = screenSize.width - safeArea.trailing - edgePadding
+        let safeWidth = max(0, safeMaxX - safeMinX)
+        
+        // Callout can be at most the safe width
+        let maxCalloutWidth = safeWidth
         
         let effectiveSize = popoverSize == .zero 
             ? CGSize(width: min(screenSize.width * 0.6, maxCalloutWidth), height: 50)
@@ -331,12 +341,23 @@ private struct ActiveSherpaOverlay: View {
             safeArea: safeArea
         )
         
+        // Calculate the center position, ensuring the callout stays within safe bounds
+        // Even if the actual rendered size differs from effectiveSize, this keeps it visible
+        let centerX = positioning.point.x + effectiveSize.width / 2
+        let centerY = positioning.point.y + effectiveSize.height / 2
+        
+        // Clamp the center position so callout can't extend past safe edges
+        // This accounts for potential size differences between effectiveSize and actual size
+        let halfWidth = effectiveSize.width / 2
+        let halfHeight = effectiveSize.height / 2
+        let clampedCenterX = max(safeMinX + halfWidth, min(centerX, safeMaxX - halfWidth))
+        let clampedCenterY = max(edgePadding + halfHeight, min(centerY, screenSize.height - edgePadding - halfHeight))
+        
         tagInfo.callout.createView(onTap: { sherpa.delegate.onCalloutTap(sherpa: sherpa) })
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: maxCalloutWidth)
             .environment(\.calloutPointerOffset, positioning.pointerOffset)
-            .position(x: positioning.point.x + effectiveSize.width / 2, 
-                     y: positioning.point.y + effectiveSize.height / 2)
+            .position(x: clampedCenterX, y: clampedCenterY)
             .accessibilityAddTraits(.isButton)
     }
     
@@ -384,10 +405,11 @@ private struct ActiveSherpaOverlay: View {
             y = idealY
         }
         
-        // Use safe area insets for horizontal bounds to prevent clipping at screen edges
-        let horizontalPadding = Design.Spacing.small
-        let minX = safeArea.leading + horizontalPadding
-        let maxX = screenSize.width - popoverSize.width - safeArea.trailing - horizontalPadding
+        // Use generous padding from screen edges to prevent callout clipping
+        // This accounts for safe areas plus extra margin for visual clearance
+        let edgePadding = Design.Spacing.large  // 16pt - more generous than before
+        let minX = safeArea.leading + edgePadding
+        let maxX = screenSize.width - popoverSize.width - safeArea.trailing - edgePadding
         x = max(minX, min(x, maxX))
         
         let minY = Design.Spacing.safeArea
