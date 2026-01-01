@@ -218,33 +218,40 @@ private struct ActiveSherpaOverlay: View {
         GeometryReader { proxy in
             let cutoutFrame = proxy[tagInfo.anchor]
             let expandedFrame = cutoutFrame.insetBy(dx: -config.spotlightPadding, dy: -config.spotlightPadding)
-            let screenSize = proxy.size
+            let proxySize = proxy.size
             let safeArea = proxy.safeAreaInsets
             
+            // Use actual screen bounds for clamping (more reliable than proxy.size)
+            let screenBounds = UIScreen.main.bounds.size
+            
             // Clamp the frame to screen bounds to prevent edge clipping
-            let clampedFrame = clampToScreen(frame: expandedFrame, screenSize: screenSize)
+            // Add small inset to ensure highlight border is fully visible
+            let clampedFrame = clampToScreen(frame: expandedFrame, screenSize: screenBounds, borderWidth: config.highlightWidth)
             
             spotlightOverlay(expandedFrame: clampedFrame)
             highlightRing(expandedFrame: clampedFrame)
             touchHandler(expandedFrame: clampedFrame)
-            calloutView(cutoutFrame: clampedFrame, screenSize: screenSize, safeArea: safeArea)
+            calloutView(cutoutFrame: clampedFrame, screenSize: proxySize, safeArea: safeArea)
         }
         .ignoresSafeArea()
         .animation(.easeInOut(duration: config.transitionDuration), value: sherpa.current)
     }
     
-    /// Clamps a frame to fit within screen bounds
-    private func clampToScreen(frame: CGRect, screenSize: CGSize) -> CGRect {
-        let minX = max(0, frame.minX)
-        let minY = max(0, frame.minY)
-        let maxX = min(screenSize.width, frame.maxX)
-        let maxY = min(screenSize.height, frame.maxY)
+    /// Clamps a frame to fit within screen bounds, accounting for border width
+    private func clampToScreen(frame: CGRect, screenSize: CGSize, borderWidth: CGFloat) -> CGRect {
+        // Add half the border width as inset so the stroke is fully visible
+        let inset = borderWidth / 2
+        
+        let minX = max(inset, frame.minX)
+        let minY = max(inset, frame.minY)
+        let maxX = min(screenSize.width - inset, frame.maxX)
+        let maxY = min(screenSize.height - inset, frame.maxY)
         
         return CGRect(
             x: minX,
             y: minY,
-            width: maxX - minX,
-            height: maxY - minY
+            width: max(0, maxX - minX),
+            height: max(0, maxY - minY)
         )
     }
     

@@ -127,27 +127,23 @@ struct ScrollViewDemo: View {
     // MARK: - Chip Selector
     
     private func chipSelectorSection(screenWidth: CGFloat) -> some View {
-        VStack(spacing: AppDesign.Spacing.medium) {
-            // This ScrollView extends edge-to-edge
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: AppDesign.Spacing.medium) {
-                    ForEach(chips, id: \.self) { value in
-                        chipView(value: value)
-                            .sherpaTag(tagFor(chip: value))
-                    }
+        // This ScrollView is truly edge-to-edge with NO padding on the ScrollView itself
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: AppDesign.Spacing.medium) {
+                ForEach(chips, id: \.self) { value in
+                    chipView(value: value)
+                        .sherpaTag(tagFor(chip: value))
                 }
-                .padding(.horizontal, AppDesign.Spacing.xxLarge)
-                .frame(minWidth: screenWidth)
             }
-            .sherpaTag(ChipTags.chipSelector)
-            .padding(.vertical, AppDesign.Spacing.large)
-            .background(
-                RoundedRectangle(cornerRadius: AppDesign.CornerRadius.small)
-                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                    .padding(.horizontal, AppDesign.Spacing.large)
-            )
+            .padding(.horizontal, AppDesign.Spacing.xxLarge)
+            .frame(minWidth: screenWidth)
         }
-        .padding(.vertical, AppDesign.Spacing.large)
+        .frame(maxWidth: .infinity) // Ensure it takes full width
+        .sherpaTag(ChipTags.chipSelector)
+        .background(
+            RoundedRectangle(cornerRadius: 0)
+                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+        )
     }
     
     private func tagFor(chip value: Int) -> ChipTags {
