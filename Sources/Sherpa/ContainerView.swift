@@ -24,11 +24,14 @@ public struct SherpaContainerView<Content: View>: View {
         content()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .environment(sherpa)
-            .overlayPreferenceValue(SherpaTagPreferenceKey.self) { all in
-                SherpaOverlay(sherpa: sherpa, allRecordedItems: all, popoverSize: popoverSize)
-                    .environment(sherpa)
-            }
             .onPreferenceChange(CalloutPreferenceKey.self) { popoverSize = $0 }
+            .overlayPreferenceValue(SherpaTagPreferenceKey.self) { all in
+                GeometryReader { _ in
+                    SherpaOverlay(sherpa: sherpa, allRecordedItems: all, popoverSize: popoverSize)
+                        .environment(sherpa)
+                }
+                .ignoresSafeArea()
+            }
     }
 }
 
@@ -216,14 +219,33 @@ private struct ActiveSherpaOverlay: View {
             let cutoutFrame = proxy[tagInfo.anchor]
             let expandedFrame = cutoutFrame.insetBy(dx: -config.spotlightPadding, dy: -config.spotlightPadding)
             let screenSize = proxy.size
+            let safeArea = proxy.safeAreaInsets
             
-            spotlightOverlay(expandedFrame: expandedFrame)
-            highlightRing(expandedFrame: expandedFrame)
-            touchHandler(expandedFrame: expandedFrame)
-            calloutView(cutoutFrame: expandedFrame, screenSize: screenSize)
+            // Clamp the frame to screen bounds to prevent edge clipping
+            let clampedFrame = clampToScreen(frame: expandedFrame, screenSize: screenSize)
+            
+            spotlightOverlay(expandedFrame: clampedFrame)
+            highlightRing(expandedFrame: clampedFrame)
+            touchHandler(expandedFrame: clampedFrame)
+            calloutView(cutoutFrame: clampedFrame, screenSize: screenSize, safeArea: safeArea)
         }
         .ignoresSafeArea()
         .animation(.easeInOut(duration: config.transitionDuration), value: sherpa.current)
+    }
+    
+    /// Clamps a frame to fit within screen bounds
+    private func clampToScreen(frame: CGRect, screenSize: CGSize) -> CGRect {
+        let minX = max(0, frame.minX)
+        let minY = max(0, frame.minY)
+        let maxX = min(screenSize.width, frame.maxX)
+        let maxY = min(screenSize.height, frame.maxY)
+        
+        return CGRect(
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY
+        )
     }
     
     @ViewBuilder
@@ -254,7 +276,7 @@ private struct ActiveSherpaOverlay: View {
             RoundedRectangle(cornerRadius: config.spotlightCornerRadius)
                 .strokeBorder(config.highlightColor, lineWidth: config.highlightWidth)
                 .frame(width: expandedFrame.width, height: expandedFrame.height)
-                .offset(x: expandedFrame.minX, y: expandedFrame.minY)
+                .position(x: expandedFrame.midX, y: expandedFrame.midY)
                 .accessibilityHidden(true)
         }
     }
@@ -268,7 +290,7 @@ private struct ActiveSherpaOverlay: View {
             Color.clear
                 .contentShape(RoundedRectangle(cornerRadius: config.spotlightCornerRadius))
                 .frame(width: expandedFrame.width, height: expandedFrame.height)
-                .offset(x: expandedFrame.minX, y: expandedFrame.minY)
+                .position(x: expandedFrame.midX, y: expandedFrame.midY)
                 .onTapGesture { sherpa.advance() }
                 .accessibilityLabel("Highlighted element")
                 .accessibilityHint("Tap to continue to next step")
@@ -277,7 +299,7 @@ private struct ActiveSherpaOverlay: View {
             Color.clear
                 .contentShape(RoundedRectangle(cornerRadius: config.spotlightCornerRadius))
                 .frame(width: expandedFrame.width, height: expandedFrame.height)
-                .offset(x: expandedFrame.minX, y: expandedFrame.minY)
+                .position(x: expandedFrame.midX, y: expandedFrame.midY)
                 .onTapGesture { action() }
                 .accessibilityLabel("Highlighted element")
                 .accessibilityAddTraits(.isButton)
@@ -285,20 +307,26 @@ private struct ActiveSherpaOverlay: View {
     }
     
     @ViewBuilder
-    private func calloutView(cutoutFrame: CGRect, screenSize: CGSize) -> some View {
+    private func calloutView(cutoutFrame: CGRect, screenSize: CGSize, safeArea: EdgeInsets) -> some View {
+        // Calculate maximum available width accounting for safe areas and padding
+        let horizontalPadding = Design.Spacing.small * 2
+        let maxCalloutWidth = screenSize.width - safeArea.leading - safeArea.trailing - horizontalPadding
+        
         let effectiveSize = popoverSize == .zero 
-            ? CGSize(width: screenSize.width * 0.6, height: 50)
-            : popoverSize
+            ? CGSize(width: min(screenSize.width * 0.6, maxCalloutWidth), height: 50)
+            : CGSize(width: min(popoverSize.width, maxCalloutWidth), height: popoverSize.height)
         
         let positioning = calculateCalloutPosition(
             cutout: cutoutFrame,
             preferredEdge: tagInfo.callout.edge,
             popoverSize: effectiveSize,
-            screenSize: screenSize
+            screenSize: screenSize,
+            safeArea: safeArea
         )
         
         tagInfo.callout.createView(onTap: { sherpa.delegate.onCalloutTap(sherpa: sherpa) })
-            .fixedSize()
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: maxCalloutWidth)
             .environment(\.calloutPointerOffset, positioning.pointerOffset)
             .position(x: positioning.point.x + effectiveSize.width / 2, 
                      y: positioning.point.y + effectiveSize.height / 2)
@@ -316,7 +344,8 @@ private struct ActiveSherpaOverlay: View {
         cutout: CGRect,
         preferredEdge: Edge,
         popoverSize: CGSize,
-        screenSize: CGSize
+        screenSize: CGSize,
+        safeArea: EdgeInsets
     ) -> CalloutPositioning {
         var x: CGFloat
         var y: CGFloat
@@ -348,8 +377,10 @@ private struct ActiveSherpaOverlay: View {
             y = idealY
         }
         
-        let minX = Design.Spacing.small
-        let maxX = screenSize.width - popoverSize.width - Design.Spacing.small
+        // Use safe area insets for horizontal bounds to prevent clipping at screen edges
+        let horizontalPadding = Design.Spacing.small
+        let minX = safeArea.leading + horizontalPadding
+        let maxX = screenSize.width - popoverSize.width - safeArea.trailing - horizontalPadding
         x = max(minX, min(x, maxX))
         
         let minY = Design.Spacing.safeArea
@@ -384,25 +415,18 @@ private struct SpotlightOverlay<Overlay: View>: View {
     var body: some View {
         if let overlayView {
             overlayView
-                .reverseMask {
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .frame(width: cutoutFrame.width, height: cutoutFrame.height)
-                        .offset(x: cutoutFrame.minX, y: cutoutFrame.minY)
-                }
-        }
-    }
-}
-
-// MARK: - View Extensions
-
-extension View {
-    @ViewBuilder
-    fileprivate func reverseMask<Mask: View>(@ViewBuilder _ mask: () -> Mask) -> some View {
-        self.mask {
-            Rectangle()
-                .overlay(alignment: .topLeading) {
-                    mask()
-                        .blendMode(.destinationOut)
+                .mask {
+                    // Use a rectangle that fills all space minus the cutout
+                    Rectangle()
+                        .fill(.white)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: cornerRadius)
+                                .fill(.black)
+                                .frame(width: cutoutFrame.width, height: cutoutFrame.height)
+                                .position(x: cutoutFrame.midX, y: cutoutFrame.midY)
+                                .blendMode(.destinationOut)
+                        }
+                        .compositingGroup()
                 }
         }
     }

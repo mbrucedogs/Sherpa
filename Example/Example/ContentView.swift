@@ -48,6 +48,10 @@ struct SherpaDemoList: View {
                     NavigationLink(destination: ManualDemo()) {
                         Label("Manual Flow", systemImage: "arrow.triangle.branch")
                     }
+                    
+                    NavigationLink(destination: ScrollViewDemo()) {
+                        Label("ScrollView & Edges", systemImage: "arrow.left.and.right")
+                    }
                 }
             }
             .navigationTitle("Sherpa Examples")

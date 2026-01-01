@@ -18,7 +18,7 @@ public struct Callout {
     public static func text(_ text: String, edge: Edge = .top) -> Self {
         .bubble(edge: edge) { 
             Text(text)
-                .fixedSize(horizontal: true, vertical: false)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
     

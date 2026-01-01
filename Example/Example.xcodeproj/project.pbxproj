@@ -12,6 +12,7 @@
 		AA00000526FBD00100000003 /* CallbacksDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000426FBD00100000003 /* CallbacksDemo.swift */; };
 		AA00000726FBD00100000004 /* ConfigurationDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000626FBD00100000004 /* ConfigurationDemo.swift */; };
 		AA00000926FBD00100000005 /* Design.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000826FBD00100000005 /* Design.swift */; };
+		AA00000B26FBD00100000006 /* ScrollViewDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000A26FBD00100000006 /* ScrollViewDemo.swift */; };
 		EF07403C26FBB0F700222198 /* BasicDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF07403B26FBB0F700222198 /* BasicDemo.swift */; };
 		EF07403E26FBB11E00222198 /* BarDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF07403D26FBB11E00222198 /* BarDemo.swift */; };
 		EF07404026FBB14800222198 /* CustomDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF07403F26FBB14800222198 /* CustomDemo.swift */; };
@@ -29,6 +30,7 @@
 		AA00000426FBD00100000003 /* CallbacksDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallbacksDemo.swift; sourceTree = "<group>"; };
 		AA00000626FBD00100000004 /* ConfigurationDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigurationDemo.swift; sourceTree = "<group>"; };
 		AA00000826FBD00100000005 /* Design.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Design.swift; sourceTree = "<group>"; };
+		AA00000A26FBD00100000006 /* ScrollViewDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollViewDemo.swift; sourceTree = "<group>"; };
 		EF07403B26FBB0F700222198 /* BasicDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicDemo.swift; sourceTree = "<group>"; };
 		EF07403D26FBB11E00222198 /* BarDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarDemo.swift; sourceTree = "<group>"; };
 		EF07403F26FBB14800222198 /* CustomDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomDemo.swift; sourceTree = "<group>"; };
@@ -83,6 +85,7 @@
 				EF07403D26FBB11E00222198 /* BarDemo.swift */,
 				EF07403F26FBB14800222198 /* CustomDemo.swift */,
 				EF07404126FBC33500222198 /* ManualDemo.swift */,
+				AA00000A26FBD00100000006 /* ScrollViewDemo.swift */,
 				EF84DC6626FB7EAE004A793C /* Assets.xcassets */,
 				EF84DC6B26FB7EAE004A793C /* Info.plist */,
 				EF84DC6826FB7EAE004A793C /* Preview Content */,
@@ -178,6 +181,7 @@
 				AA00000526FBD00100000003 /* CallbacksDemo.swift in Sources */,
 				AA00000726FBD00100000004 /* ConfigurationDemo.swift in Sources */,
 				AA00000926FBD00100000005 /* Design.swift in Sources */,
+				AA00000B26FBD00100000006 /* ScrollViewDemo.swift in Sources */,
 				EF07404026FBB14800222198 /* CustomDemo.swift in Sources */,
 				EF84DC7726FB7EEE004A793C /* ContentView.swift in Sources */,
 				EF07403E26FBB11E00222198 /* BarDemo.swift in Sources */,
