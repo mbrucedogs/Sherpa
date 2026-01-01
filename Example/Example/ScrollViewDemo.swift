@@ -47,29 +47,26 @@ struct ScrollViewDemo: View {
     private let chips = [1, 5, 25, 100, 500]
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                // Casino table background
-                backgroundGradient
+        ZStack {
+            // Casino table background
+            backgroundGradient
+            
+            VStack(spacing: 0) {
+                Spacer()
                 
-                VStack(spacing: 0) {
-                    Spacer()
-                    
-                    // Player area
-                    playerArea
-                    
-                    Spacer()
-                    
-                    // Full-width chip selector in ScrollView
-                    chipSelectorSection(screenWidth: geometry.size.width)
-                    
-                    // Action buttons
-                    actionButtons
-                        .padding(.bottom, AppDesign.Spacing.xxLarge)
-                }
+                // Player area
+                playerArea
+                
+                Spacer()
+                
+                // Chip selector in ScrollView
+                chipSelectorSection
+                
+                // Action buttons
+                actionButtons
+                    .padding(.bottom, AppDesign.Spacing.xxLarge)
             }
         }
-        .ignoresSafeArea(edges: .horizontal)
         .navigationTitle("ScrollView Demo")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -126,8 +123,8 @@ struct ScrollViewDemo: View {
     
     // MARK: - Chip Selector
     
-    private func chipSelectorSection(screenWidth: CGFloat) -> some View {
-        // This ScrollView is truly edge-to-edge with NO padding on the ScrollView itself
+    private var chipSelectorSection: some View {
+        // Normal ScrollView - Sherpa handles edge clipping automatically
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: AppDesign.Spacing.medium) {
                 ForEach(chips, id: \.self) { value in
@@ -135,15 +132,9 @@ struct ScrollViewDemo: View {
                         .sherpaTag(tagFor(chip: value))
                 }
             }
-            .padding(.horizontal, AppDesign.Spacing.xxLarge)
-            .frame(minWidth: screenWidth)
+            .padding(.horizontal, AppDesign.Spacing.large)
         }
-        .frame(maxWidth: .infinity) // Ensure it takes full width
         .sherpaTag(ChipTags.chipSelector)
-        .background(
-            RoundedRectangle(cornerRadius: 0)
-                .stroke(Color.white.opacity(0.2), lineWidth: 1)
-        )
     }
     
     private func tagFor(chip value: Int) -> ChipTags {
