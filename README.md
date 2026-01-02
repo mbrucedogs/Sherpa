@@ -45,7 +45,7 @@ Add Sherpa to your Xcode project:
 1. Go to **File → Add Package Dependencies**
 2. Enter the repository URL:
    ```
-   https://github.com/yourusername/Sherpa
+   https://github.com/mbrucedogs/Sherpa
    ```
 3. Select **Up to Next Major Version** with `1.0.0`
 
@@ -53,7 +53,7 @@ Or add it to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/yourusername/Sherpa", from: "1.0.0")
+    .package(url: "https://github.com/mbrucedogs/Sherpa", from: "1.0.0")
 ]
 ```
 
