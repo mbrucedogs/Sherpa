@@ -32,31 +32,44 @@ extension View {
 
     /// Tags this view as a focus target for the walkthrough
     public func sherpaTag<T: SherpaTags>(_ tag: T) -> some View {
-        anchorPreference(key: SherpaTagPreferenceKey.self, value: .bounds) { anchor in
-            [tag.key(): SherpaTagInfo(anchor: anchor, callout: tag.makeCallout())]
+        background {
+            GeometryReader { proxy in
+                Color.clear
+                    .preference(
+                        key: SherpaTagPreferenceKey.self,
+                        value: [tag.key(): SherpaTagInfo(
+                            frame: proxy.frame(in: .named("sherpa")),
+                            callout: tag.makeCallout()
+                        )]
+                    )
+            }
         }
         .accessibilityElement(children: .contain)
     }
     
-    /// Tags an extended area beyond this view (useful for nav bars, toolbars)
-    public func sherpaExtensionTag<T: SherpaTags>(_ tag: T, edge: Edge, size: CGFloat = 100) -> some View {
-        let width: CGFloat? = (edge == .leading || edge == .trailing) ? size : nil
-        let height: CGFloat? = (edge == .top || edge == .bottom) ? size : nil
-        
-        let alignment: Alignment = switch edge {
-        case .top: .top
-        case .leading: .leading
-        case .trailing: .trailing
-        case .bottom: .bottom
+    /// Tags the bottom safe area region (e.g., tab bar) for walkthrough highlighting.
+    /// Use this for elements that exist in the safe area outside the content bounds.
+    /// - Parameters:
+    ///   - tag: The tag identifying this step
+    ///   - height: Height of the region to highlight (default: 83pt for tab bar + home indicator)
+    public func sherpaTabBarTag<T: SherpaTags>(_ tag: T, height: CGFloat = 83) -> some View {
+        self.background {
+            GeometryReader { proxy in
+                // Calculate the frame at the absolute bottom of the screen
+                let screenHeight = proxy.size.height + proxy.safeAreaInsets.top + proxy.safeAreaInsets.bottom
+                let tabBarY = screenHeight - height
+                let frame = CGRect(x: 0, y: tabBarY, width: proxy.size.width, height: height)
+                
+                Color.clear
+                    .preference(
+                        key: SherpaTagPreferenceKey.self,
+                        value: [tag.key(): SherpaTagInfo(
+                            frame: frame,
+                            callout: tag.makeCallout()
+                        )]
+                    )
+            }
         }
-        
-        let overlayView = Color.clear
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .frame(width: width, height: height)
-            .sherpaTag(tag)
-            .padding(Edge.Set(edge), -size)
-        
-        return overlay(overlayView, alignment: alignment)
     }
     
     // MARK: - Navigation Helpers

@@ -23,11 +23,12 @@ public struct SherpaContainerView<Content: View>: View {
     public var body: some View {
         content()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .coordinateSpace(name: "sherpa")
             .environment(sherpa)
             .onPreferenceChange(CalloutPreferenceKey.self) { popoverSize = $0 }
             .overlayPreferenceValue(SherpaTagPreferenceKey.self) { all in
-                GeometryReader { _ in
-                    SherpaOverlay(sherpa: sherpa, allRecordedItems: all, popoverSize: popoverSize)
+                GeometryReader { proxy in
+                    SherpaOverlay(sherpa: sherpa, allRecordedItems: all, popoverSize: popoverSize, containerSize: proxy.size, safeArea: proxy.safeAreaInsets)
                         .environment(sherpa)
                 }
                 .ignoresSafeArea()
@@ -149,6 +150,8 @@ private struct SherpaOverlay: View {
     let sherpa: Sherpa
     let allRecordedItems: SherpaTagPreferenceKey.Value
     let popoverSize: CGSize
+    let containerSize: CGSize
+    let safeArea: EdgeInsets
     
     var body: some View {
         ZStack {
@@ -176,7 +179,7 @@ private struct SherpaOverlay: View {
     @ViewBuilder
     private var activeOverlay: some View {
         if let current = sherpa.current, let tagInfo = allRecordedItems[current] {
-            ActiveSherpaOverlay(tagInfo: tagInfo, sherpa: sherpa, popoverSize: popoverSize)
+            ActiveSherpaOverlay(tagInfo: tagInfo, sherpa: sherpa, popoverSize: popoverSize, containerSize: containerSize, safeArea: safeArea)
         }
     }
     
@@ -211,23 +214,21 @@ private struct ActiveSherpaOverlay: View {
     let tagInfo: SherpaTagInfo
     let sherpa: Sherpa
     let popoverSize: CGSize
+    let containerSize: CGSize
+    let safeArea: EdgeInsets
     
     private var config: SherpaConfiguration { sherpa.configuration }
     
     var body: some View {
-        GeometryReader { proxy in
-            let cutoutFrame = proxy[tagInfo.anchor]
-            let expandedFrame = cutoutFrame.insetBy(dx: -config.spotlightPadding, dy: -config.spotlightPadding)
-            let proxySize = proxy.size
-            let safeArea = proxy.safeAreaInsets
-            
-            // Use screen bounds for constraining the highlight ring
-            let screenBounds = UIScreen.main.bounds.size
-            
-            // Constrain highlight ring to stay within visible screen bounds
-            // so the border stroke is always visible (not clipped off-screen)
-            let constrainedHighlightFrame = constrainToScreen(frame: expandedFrame, screenSize: screenBounds)
-            
+        // Use frame directly from tag - already in "sherpa" coordinate space
+        let cutoutFrame = tagInfo.frame
+        let expandedFrame = cutoutFrame.insetBy(dx: -config.spotlightPadding, dy: -config.spotlightPadding)
+        
+        // Constrain highlight ring to stay within visible bounds
+        // so the border stroke is always visible (not clipped off-screen)
+        let constrainedHighlightFrame = constrainToScreen(frame: expandedFrame, screenSize: containerSize)
+        
+        ZStack {
             // Spotlight cutout uses full frame to properly cut out the entire view
             spotlightOverlay(expandedFrame: expandedFrame)
             // Highlight ring uses constrained frame so border is always visible
@@ -235,7 +236,7 @@ private struct ActiveSherpaOverlay: View {
             // Touch handler uses full frame for proper interaction
             touchHandler(expandedFrame: expandedFrame)
             // Callout uses constrained frame for positioning
-            calloutView(cutoutFrame: constrainedHighlightFrame, screenSize: proxySize, safeArea: safeArea)
+            calloutView(cutoutFrame: constrainedHighlightFrame, screenSize: containerSize, safeArea: safeArea)
         }
         .ignoresSafeArea()
         .animation(.easeInOut(duration: config.transitionDuration), value: sherpa.current)
@@ -505,7 +506,7 @@ public struct GuidableView<Content: View, Tags: SherpaTags>: View {
 // MARK: - Preference Keys
 
 struct SherpaTagInfo {
-    let anchor: Anchor<CGRect>
+    let frame: CGRect  // Frame in "sherpa" coordinate space
     let callout: Callout
 }
 

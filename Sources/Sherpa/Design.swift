@@ -125,6 +125,9 @@ extension Color {
         /// Callout background
         public static let calloutBackground = Color.white
         
+        /// Callout text color - ensures readability on white background
+        public static let calloutText = Color.black
+        
         /// Callout pressed state
         public static let calloutPressed = Color(white: 0.9)
         

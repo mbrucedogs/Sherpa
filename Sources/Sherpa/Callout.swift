@@ -18,6 +18,7 @@ public struct Callout {
     public static func text(_ text: String, edge: Edge = .top) -> Self {
         .bubble(edge: edge) { 
             Text(text)
+                .foregroundStyle(Color.Sherpa.calloutText)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -27,10 +28,12 @@ public struct Callout {
         .bubble(edge: edge) {
             HStack {
                 Text(text)
+                    .foregroundStyle(Color.Sherpa.calloutText)
                     .padding(.trailing, Design.Spacing.xSmall)
-                Color.black.frame(width: Design.LineWidth.thin)
+                Color.Sherpa.calloutText.frame(width: Design.LineWidth.thin)
                 Text(sherpa: SherpaStrings.ok)
                     .bold()
+                    .foregroundStyle(Color.Sherpa.calloutText)
                     .padding(.leading, Design.Spacing.xSmall)
             }
             .fixedSize()
@@ -41,6 +44,7 @@ public struct Callout {
     public static func labeled(_ text: String, systemImage: String, edge: Edge = .top) -> Self {
         .bubble(edge: edge) {
             Label(text, systemImage: systemImage)
+                .foregroundStyle(Color.Sherpa.calloutText)
                 .fixedSize()
         }
     }
